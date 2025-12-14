@@ -1,0 +1,53 @@
+services:
+  # --- SERVIÇO 1: BANCO DE DADOS (PostgreSQL) ---
+  db:
+    image: postgres:15-alpine
+    container_name: todo_db
+    environment:
+      POSTGRES_DB: todo_db
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secret_password_local
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - network
+    # Healthcheck: Garante que o Java só tente conectar quando o banco estiver 100% pronto
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d todo_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --- SERVIÇO 2: APLICAÇÃO JAVA (Spring Boot 3 + Java 21) ---
+  app:
+    build: .  # Lê o Dockerfile (com Java 21) na pasta atual
+    container_name: todo_app
+    ports:
+      - "8080:8080" # Libera a porta para o seu navegador
+    depends_on:
+      db:
+        condition: service_healthy # Espera o Healthcheck do banco dar OK
+    environment:
+      # Conexão com o container 'db'
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/todo_db
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: secret_password_local
+      # Garante que o Hibernate crie/atualize as tabelas automaticamente
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      # Perfil ativo (opcional, mas bom pra garantir)
+      SPRING_PROFILES_ACTIVE: default
+    volumes:
+      # Persistência dos Uploads: Salva na sua máquina real (pasta ./uploads)
+      - ./uploads:/app/uploads
+    networks:
+      - network
+    restart: on-failure
+
+volumes:
+  postgres_data:
+
+networks:
+  network:
+    driver: bridge

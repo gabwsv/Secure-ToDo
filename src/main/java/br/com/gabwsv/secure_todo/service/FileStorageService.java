@@ -37,36 +37,14 @@ public class FileStorageService {
     }
 
     public String storedFile(MultipartFile file){
+        //Vulnerável: confia no nome enviado pelo usuário ou na verificação feita pelo front-end
         String originalFileName = file.getOriginalFilename();
 
-        //Evitar path traversal ../../
-        if(originalFileName == null || originalFileName.contains("..")){
-            throw new SecurityException("Nome de arquivo inválido!");
-        }
-
-        String fileExtension = getFileExtension(originalFileName);
-        if(!ALLOWED_FILES.containsKey(fileExtension)){
-            throw new SecurityException("Extensão não permitida: ."+fileExtension);
-        }
-        try(InputStream inputStream = file.getInputStream()){
-            Tika tika = new Tika();
-            // Ler o "Magic Bytes" do arquivo.
-            String detectedMimeType = tika.detect(inputStream);
-
-            System.out.println("Arquivo: "+originalFileName+ " | Ext: " + fileExtension + " | Mime: " + detectedMimeType);
-
-            String expectedMimeType = ALLOWED_FILES.get(fileExtension);
-
-            if(!expectedMimeType.equals(detectedMimeType)) {
-                // Se a extensão for diferente do Mime Bytes, alerta claro de tentativa de bypassar os filtros
-                throw new SecurityException("Conteúdo do arquivo não condiz com a extensão. (Spoofing detectado)");
-            }
-
+        try{
             String fileName = UUID.randomUUID().toString() + "-"+originalFileName;
             Path targetLocation = this.fileStorageLocation.resolve(fileName);
 
             Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
-
             return fileName;
         } catch (IOException ex){
             throw new RuntimeException("Falha ao armazenar arquivo "+ originalFileName, ex);

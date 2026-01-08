@@ -7,12 +7,9 @@ import jakarta.validation.constraints.Size;
 
 public record TaskRequestDTO(
         @NotBlank(message = "O título é obrigatório")
-        @Size(min=3, max=100, message = "Título deve ter entre 3 a 100 caracteres")
-        @Pattern(regexp = "^[^<>]+$", message = "O título não pode conter caracteres HTML (< ou >)")
+        //Sem sanitização
         String title,
 
-        @Size(max = 500, message = "Descrição muito longa (máx 500)")
-        @Pattern(regexp = "^[^<>]+$", message = "A descrição não pode conter caracteres HTML (< ou >)")
         String description,
 
         TaskPriority priority

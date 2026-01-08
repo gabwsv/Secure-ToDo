@@ -40,14 +40,10 @@ public class TaskService {
     }
 
     public TaskResponseDTO updateTask(UUID id, TaskRequestDTO request){
-        User user = getLoggedUser();
+        //Vulnerável a IDOR
 
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Tarefa não encontrada."));
-
-        if(!task.getUser().getId().equals(user.getId())){
-            throw new SecurityException("Você não tem permissão para alterar esta tarefa.");
-        }
 
         if(request.title() != null)
             task.setTitle(request.title());
@@ -90,13 +86,9 @@ public class TaskService {
     }
 
     public void deleteTask(UUID id){
-        User user = getLoggedUser();
-
-        Task task = taskRepository.findById(id).orElseThrow(() -> new RuntimeException("Tarefa não encontrada"));
-
-        if (!task.getUser().getId().equals(user.getId())){
-            throw new SecurityException("Você não tem permissão para deletar esta tarefa.");
-        }
+        //Código vulnerável IDOR
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Tarefa não encontrada"));
 
         taskRepository.delete(task);
     }
@@ -108,19 +100,12 @@ public class TaskService {
     }
 
     public void uploadAttachment(UUID taskId, MultipartFile file){
-        User user = getLoggedUser();
-
+        //Vulnerável a IDOR
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new RuntimeException("Tarefa não encontrada."));
 
-        if(!task.getUser().getId().equals(user.getId())){
-            throw new SecurityException("Você não tem permissão para alterar esta tarefa.");
-        }
-
         String fileName = fileStorageService.storedFile(file);
-
         task.setAttachmentPath(fileName);
-
         taskRepository.save(task);
     }
 

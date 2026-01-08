@@ -2,6 +2,7 @@ package br.com.gabwsv.secure_todo.controller;
 
 import br.com.gabwsv.secure_todo.dto.task.TaskRequestDTO;
 import br.com.gabwsv.secure_todo.dto.task.TaskResponseDTO;
+import br.com.gabwsv.secure_todo.service.SearchService;
 import br.com.gabwsv.secure_todo.service.TaskService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -24,6 +25,8 @@ import java.util.UUID;
 public class TaskController {
 
     private final TaskService service;
+
+    private final SearchService searchService;
 
     @Operation(summary = "Criar nova tarefa", description = "Cria uma tarefa vinculado ao usuário logado.")
     @PostMapping
@@ -68,5 +71,11 @@ public class TaskController {
     @PatchMapping("/{id}/status")
     public ResponseEntity<TaskResponseDTO> updateStatus(@PathVariable UUID id){
         return ResponseEntity.ok(service.updateTaskStatus(id));
+    }
+
+    @Operation(summary = "Busca Personalizada", description = "Buscar tarefas por termo (título ou descrição).")
+    @GetMapping("/search")
+    public ResponseEntity<List<TaskResponseDTO>> search(@RequestParam String query){
+        return ResponseEntity.ok(searchService.searchTaskVulnerable(query));
     }
 }

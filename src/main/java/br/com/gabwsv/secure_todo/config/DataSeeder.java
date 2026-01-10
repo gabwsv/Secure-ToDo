@@ -24,10 +24,9 @@ public class DataSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        if (userRepository.count() > 0){
-            System.out.println("---- BANCO JÁ POPULADO, PULANDO SEED ---");
-            return;
-        }
+        System.out.println("--- LIMPANDO BANCO DE DADOS ---");
+        taskRepository.deleteAll(); // Apaga tarefas primeiro (FK)
+        userRepository.deleteAll(); // Apaga usuários depois
 
         System.out.println("--- INICIANDO POPULAÇÃO DO BANCO DE DADOS ---");
 

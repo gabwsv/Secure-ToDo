@@ -37,14 +37,14 @@ public class FileStorageService {
     }
 
     public String storedFile(MultipartFile file){
-        //Vulnerável: confia no nome enviado pelo usuário ou na verificação feita pelo front-end
         String originalFileName = file.getOriginalFilename();
 
-        try{
+        try(InputStream inputStream = file.getInputStream()){
             String fileName = UUID.randomUUID().toString() + "-"+originalFileName;
             Path targetLocation = this.fileStorageLocation.resolve(fileName);
 
             Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+
             return fileName;
         } catch (IOException ex){
             throw new RuntimeException("Falha ao armazenar arquivo "+ originalFileName, ex);

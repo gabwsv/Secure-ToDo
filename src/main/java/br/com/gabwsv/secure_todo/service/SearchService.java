@@ -24,7 +24,7 @@ public class SearchService {
     public List<TaskResponseDTO> searchTaskVulnerable(String termoBusca){
         User user = taskService.getLoggedUser();
 
-        String sql = "SELECT * FROM tb_task WHERE user_id = '" + user.getId() + "'" +
+        String sql = "SELECT * FROM tb_tasks WHERE user_id = '" + user.getId() + "'" +
                 " AND (title LIKE '%" + termoBusca + "%' OR description LIKE '%" + termoBusca + "%')";
 
         Query query = entityManager.createNativeQuery(sql, Task.class);

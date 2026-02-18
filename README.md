@@ -130,3 +130,12 @@ src/main/java/br/com/gabwsv/secure_todo
 ├── security     # Configuração JWT, Filtros e Rate Limit
 └── service      # Regras de Negócio e Lógica Forense (Tika, IDOR)
 ```
+---
+
+## UPGRADE NO PROJETO PARA DEMONSTRAÇÃO DA OWASP API TOP 10:
+- **Reset de Senha (API02):** Foi introduzia uma funcionalidade para alterar a senha do usuário, junto a isso foi implementado um sistema que bloqueia o e-mail após 5 tentativas erradas, protegendo contra força bruta.
+- **Adição de Colaboradores (API06):** Funcionalidade para inclusão de colaboradores nas tasks. Protegida por um "balde de tokens" (Bucket4j) que impede que um utilizador auomatize a adição de milhares de pessoas.
+- **Importação SSRF (API07):** Importar tasks via URL externa. A aplicação checa se a URL de importação não aponta para o próprio servidor ou para a rede interna.
+- **Dicas Externas (API10):** O sistema consome uma API de terceiros, para inclusão de dicas, mas não confia nela; aplica timeouts e limpa qualquer código HTML recebido.
+- **Upload Seguro:** Valida o conteúdo real do ficheiro
+- **Painel Administrativo (API05):** Foi adicionado um painel administrativo para cleanup geral de tasks. Protegido contra BFLA

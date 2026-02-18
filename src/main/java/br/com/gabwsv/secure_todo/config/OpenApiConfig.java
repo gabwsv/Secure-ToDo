@@ -7,6 +7,8 @@ import io.swagger.v3.oas.annotations.info.Contact;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
+import org.springdoc.core.models.GroupedOpenApi;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
@@ -33,4 +35,15 @@ import org.springframework.context.annotation.Configuration;
         in = SecuritySchemeIn.HEADER
 )
 public class OpenApiConfig {
+
+    @Bean
+    public GroupedOpenApi publicApi(){
+        return GroupedOpenApi.builder()
+                .group("todo-public")
+                .pathsToMatch("/api/v1/tasks/**", "/auth/**") // Só documenta o que é oficial
+                .build();
+    }
+
 }
+
+

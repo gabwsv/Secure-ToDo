@@ -51,9 +51,10 @@ public class TaskController {
         return ResponseEntity.ok(service.createTask(request));
     }
 
+    // VULNERABLE [API04:2023]: Unrestricted Resource Consumption
+    // Um atacante pode enviar milhões de taregas em um único request ou arquivos de gigabytes para esgotar o disco/memoria
     @PostMapping("/batch")
-    public ResponseEntity<?> createTasks(@RequestBody @Size(max=50, message= "Limite de 50 tasks por vez")
-                                             List<@Valid TaskResponseDTO> tasks){
+    public ResponseEntity<?> createTasks(@RequestBody List<@Valid TaskResponseDTO> tasks){
         service.createTasks(tasks);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }

@@ -25,11 +25,12 @@ public class UserController {
     private final UserRepository userRepository;
     private final UserService userService;
 
+    //VULNERABLE: [API03:2023] Broken Object Property Level Authorization.
     @PutMapping("/profile")
     @Operation(summary = "Atualizar perfil", description = "Permite ao utilizador alterar o username. Impede alteração de privilégios.")
-    public ResponseEntity<UserResponseDTO> updateProfile(@RequestBody @Valid UserUpdateDTO dto, Authentication auth) {
-        // auth.getName() contém o username extraído do JWT pelo filtro de segurança
-        User user = userService.update(auth.getName(), dto);
-        return ResponseEntity.ok(new UserResponseDTO(user));
+    public ResponseEntity<UserResponseDTO> updateProfile(@RequestBody @Valid User userUpdates, Authentication auth) {
+        User currentUser = userRepository.findByUsername(auth.getName()).orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
+        BeanUtils.copyProperties(userUpdates, currentUser, "id");
+        return ResponseEntity.ok(new UserResponseDTO(userRepository.save(currentUser)));
     }
 }

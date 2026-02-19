@@ -48,15 +48,10 @@ public class TaskService {
         return TaskResponseDTO.fromEntity(task);
     }
 
+    //VULNERABLE: [API01:2023] BOLA - Sem checagem do proprietario do objeto.
     public TaskResponseDTO updateTask(UUID id, TaskRequestDTO request){
-        User user = getLoggedUser();
-
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Tarefa não encontrada."));
-
-        if(!task.getUser().getId().equals(user.getId())){
-            throw new SecurityException("Você não tem permissão para alterar esta tarefa.");
-        }
 
         if(request.title() != null)
             task.setTitle(request.title());
@@ -69,15 +64,10 @@ public class TaskService {
         return TaskResponseDTO.fromEntity(task);
     }
 
+    //VULNERABLE: [API01:2023] BOLA - Sem checagem do proprietario do objeto.
     public TaskResponseDTO updateTaskStatus(UUID id){
-        User user = getLoggedUser();
-
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Tarefa não encontrada."));
-
-        if(!task.getUser().getId().equals(user.getId())){
-            throw new SecurityException("Permissão negada.");
-        }
 
         if(TaskStatus.PENDENTE.equals(task.getStatus()))
             task.setStatus(TaskStatus.CONCLUIDO);
@@ -89,7 +79,19 @@ public class TaskService {
 
     }
 
-    // ---- Listar "minhas" tarefas ----
+    //VULNERABLE: [API01:2023] BOLA - Sem checagem do proprietario do objeto.
+    public void deleteTask(UUID id){
+        Task task = taskRepository.findById(id).orElseThrow(() -> new RuntimeException("Tarefa não encontrada"));
+        taskRepository.delete(task);
+    }
+
+    //VULNERABLE: [API01:2023] BOLA - Sem checagem do proprietario do objeto.
+    public TaskResponseDTO getTaskById(UUID idTask) {
+        return taskRepository.findById(idTask)
+                .map(TaskResponseDTO::fromEntity)
+                .orElseThrow(() -> new RuntimeException("Task não encontrada"));
+    }
+
     public List<TaskResponseDTO> findAllMyTasks(){
         User user = getLoggedUser();
 
@@ -98,29 +100,9 @@ public class TaskService {
                 .collect(Collectors.toList());
     }
 
-    public TaskResponseDTO getTaskById(UUID idTask) {
-        User user = getLoggedUser(); //Pega o user logado
-        Task task = taskRepository.findById(idTask)
-                .orElseThrow(() -> new RuntimeException("Task não encontrada"));
 
-        //Validações de segurança: o usuário só vê a própria task
-        if(!task.getUser().getId().equals(user.getId())){
-            throw new SecurityException("Acesso negado.");
-        }
-        return TaskResponseDTO.fromEntity(task);
-    }
 
-    public void deleteTask(UUID id){
-        User user = getLoggedUser();
 
-        Task task = taskRepository.findById(id).orElseThrow(() -> new RuntimeException("Tarefa não encontrada"));
-
-        if (!task.getUser().getId().equals(user.getId())){
-            throw new SecurityException("Você não tem permissão para deletar esta tarefa.");
-        }
-
-        taskRepository.delete(task);
-    }
 
     // ---- Metodo auxiliar para pegar usuário logado ----
     public User getLoggedUser(){

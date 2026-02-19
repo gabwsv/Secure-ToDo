@@ -17,8 +17,8 @@ public class AdminTaskController {
 
     private final TaskService service;
 
+    //VULNERABLE [API05:2023]: Broken Function Level Authorization
     @DeleteMapping("/cleanup")
-    @PreAuthorize("hasRole('ADMIN')") // Garante que apenas ADMINs executem este metodo
     public ResponseEntity<Void> deleteAllTasks() {
         service.deleteAll();
         return ResponseEntity.noContent().build();

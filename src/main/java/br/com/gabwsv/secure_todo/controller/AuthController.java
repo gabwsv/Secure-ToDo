@@ -64,25 +64,24 @@ public class AuthController {
         return ResponseEntity.ok(service.authenticate(request));
     }
 
+    //VULNERABLE: [API02:2023] Broken Authentication - Quebra de autenticação.
     @PostMapping("/reset-password")
     @Operation(summary = "Reset de senha", description = "Valida código e altera senha com proteção de Lockout")
     public ResponseEntity<?> reset(@RequestBody @Valid ResetPasswordRequest request) {
-        // Lockout (API02)
-        // 1. Validar se a conta está bloqueada por excesso de tentativas de reset
-        if (lockoutService.isLocked(request.email())) {
-            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
-                    .body("Conta bloqueada por excesso de tentativas. Tente mais tarde.");
-        }
+//        if (lockoutService.isLocked(request.email())) {
+//            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+//                    .body("Conta bloqueada por excesso de tentativas. Tente mais tarde.");
+//        }
 
         //2. Validação do código
         if (!service.verifyAndInvalidateCode(request.email(), request.code())) {
-            lockoutService.registerFailure(request.email()); // Incrementa falha para este e-mail
+//            lockoutService.registerFailure(request.email()); // Incrementa falha para este e-mail
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Código inválido.");
         }
 
         //3. Sucesso: Atualiza e limpa tentativas
         service.updatePassword(request.email(), request.newPassword());
-        lockoutService.clearAttempts(request.email());
+//        lockoutService.clearAttempts(request.email());
 
         return ResponseEntity.ok("Senha alterada com sucesso.");
     }

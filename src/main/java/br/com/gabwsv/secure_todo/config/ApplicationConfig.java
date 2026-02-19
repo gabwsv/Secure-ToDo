@@ -3,6 +3,7 @@ package br.com.gabwsv.secure_todo.config;
 import br.com.gabwsv.secure_todo.repository.UserRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -11,6 +12,10 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.client.RestClient;
+
+import java.net.http.HttpClient;
+import java.time.Duration;
 
 @Configuration
 //@RequiredArgsConstructor
@@ -46,5 +51,24 @@ public class ApplicationConfig {
         return new BCryptPasswordEncoder();
     }
 
+
+    @Bean
+    public RestClient externalApiClient(RestClient.Builder builder) {
+        // 1. Criamos o HttpClient nativo do Java com o Connect Timeout
+        HttpClient httpClient = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(2)) // Proteção contra falha de conexão (API10)
+                .build();
+
+        // 2. Passamos o httpClient pelo CONSTRUTOR da factory
+        JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(httpClient);
+
+        // 3. Configuramos o Read Timeout na factory (Proteção contra resposta lenta - API10)
+        factory.setReadTimeout(Duration.ofSeconds(5));
+
+        return builder
+                .baseUrl("https://api.externa.com")
+                .requestFactory(factory)
+                .build();
+    }
 
 }

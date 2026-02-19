@@ -17,5 +17,7 @@ public record RegisterRequest(
                  message = "Senha fraca: deve ter maiúscula, minúscula, número e caractere especial")
         String password,
         @NotNull(message = "O papel (role) é obrigatório")
-        UserRole role
+        UserRole role,
+        @NotNull
+        String captchaToken
 ) {}

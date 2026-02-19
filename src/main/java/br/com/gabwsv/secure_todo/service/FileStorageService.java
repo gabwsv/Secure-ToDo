@@ -1,5 +1,6 @@
 package br.com.gabwsv.secure_todo.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.tika.Tika;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -14,6 +15,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @Service
+@Slf4j
 public class FileStorageService {
 
     // Whitelist dos Magic Bytes e Extensão
@@ -54,6 +56,7 @@ public class FileStorageService {
             String detectedMimeType = tika.detect(inputStream);
 
             System.out.println("Arquivo: "+originalFileName+ " | Ext: " + fileExtension + " | Mime: " + detectedMimeType);
+            log.info("Análise de arquivo: {} | Ext: {} | Mime detectado: {}", file.getOriginalFilename(), fileExtension, detectedMimeType);
 
             String expectedMimeType = ALLOWED_FILES.get(fileExtension);
 

@@ -12,6 +12,9 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -20,6 +23,8 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+
+    private final Map<String, String> resetTokens = new java.util.concurrent.ConcurrentHashMap<>();
 
     public AuthResponse register(RegisterRequest request){
         User user = User.builder().username(request.username())
@@ -32,7 +37,7 @@ public class AuthService {
         return new AuthResponse(jwtToken);
     }
 
-    public AuthResponse authenticate(LoginRequest request){
+    public AuthResponse authenticate(LoginRequest request) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.username(),
@@ -40,9 +45,39 @@ public class AuthService {
                 )
         );
 
-        User user = repository.findByUsername(request.username()).orElseThrow();
+        User user = repository.findByUsername(request.username())
+                .orElseThrow(() -> new RuntimeException("Username ou Password incorreto"));
 
         String jwtToken = jwtService.generateToken(user);
         return new AuthResponse(jwtToken);
+    }
+
+//    public boolean isCodeValid(String email, String code) {
+//    }
+
+    public void generateResetCode(String email){
+        // 1. Verificar se o usuário existe para evitar enumeração (retorne sempre void)
+        repository.findByEmail(email).ifPresent(user -> {
+            String code = String.valueOf((int)((Math.random() * 900000) + 100000)); // 6 digitos
+            resetTokens.put(email, code);
+            //emailService.sendResetCode(email, code); // Chamar o service de email
+            System.out.println("DEBUG: Código de Reset para" +email+ " é " +code);
+        });
+    }
+
+    public boolean verifyAndInvalidateCode(String email, Object code) {
+        String validCode = resetTokens.get(email);
+        if(validCode != null && validCode.equals(code)){
+            resetTokens.remove(email); // Invalida após o uso.
+            return true;
+        }
+        return false;
+    }
+
+    public void updatePassword(String email, String newPassword) {
+      repository.findByEmail(email).ifPresent(user -> {
+            user.setPassword(passwordEncoder.encode(newPassword));
+            repository.save(user);
+        });
     }
 }

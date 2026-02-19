@@ -12,6 +12,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.header.writers.XXssProtectionHeaderWriter;
 
 @Configuration
 @EnableWebSecurity
@@ -24,9 +25,17 @@ public class SecurityConfiguration {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http.headers(headers -> headers
+                .frameOptions(frame -> frame.deny()) // Previne Clickjacking
+                .xssProtection(xss -> xss.headerValue(XXssProtectionHeaderWriter.HeaderValue.ENABLED_MODE_BLOCK))
+                .contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'self'"))
+        );
+
         http.csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth ->
                                 auth.requestMatchers("/auth/**").permitAll()
+                                    // CORREÇÃO: Restringe explicitamente o prefixo /admin para a Role ADMIN
+                                    .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                                     .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/swagger-ui/index.html").permitAll()
                                     .requestMatchers("/favicon.ico").permitAll()
                                     .anyRequest().authenticated()

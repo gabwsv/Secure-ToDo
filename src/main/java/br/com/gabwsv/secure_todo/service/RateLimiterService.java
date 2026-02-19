@@ -26,4 +26,9 @@ public class RateLimiterService {
         return Bucket.builder().addLimit(limit).build();
     }
 
+    public boolean isQuotaExceeded(String username) {
+        Bucket bucket = resolveBucket(username);
+        // Tenta consumir 1 token. Se não conseguir, a cota foi excedida.
+        return !bucket.tryConsume(1);
+    }
 }

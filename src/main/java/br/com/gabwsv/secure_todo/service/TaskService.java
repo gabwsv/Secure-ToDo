@@ -1,5 +1,7 @@
 package br.com.gabwsv.secure_todo.service;
 
+import br.com.gabwsv.secure_todo.dto.task.ExternalTipDTO;
+import br.com.gabwsv.secure_todo.dto.task.TaskImportRequest;
 import br.com.gabwsv.secure_todo.dto.task.TaskRequestDTO;
 import br.com.gabwsv.secure_todo.dto.task.TaskResponseDTO;
 import br.com.gabwsv.secure_todo.enums.TaskPriority;
@@ -7,12 +9,17 @@ import br.com.gabwsv.secure_todo.enums.TaskStatus;
 import br.com.gabwsv.secure_todo.model.Task;
 import br.com.gabwsv.secure_todo.model.User;
 import br.com.gabwsv.secure_todo.repository.TaskRepository;
+import br.com.gabwsv.secure_todo.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.util.HtmlUtils;
 
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.List;
@@ -22,8 +29,10 @@ import java.util.List;
 public class TaskService {
 
     private final TaskRepository taskRepository;
+    private final UserRepository userRepository;
 
     private final FileStorageService fileStorageService;
+    private final RestClient restClient;
 
     // ---- Criar TAREFA ----
     public TaskResponseDTO createTask(TaskRequestDTO request){
@@ -89,6 +98,18 @@ public class TaskService {
                 .collect(Collectors.toList());
     }
 
+    public TaskResponseDTO getTaskById(UUID idTask) {
+        User user = getLoggedUser(); //Pega o user logado
+        Task task = taskRepository.findById(idTask)
+                .orElseThrow(() -> new RuntimeException("Task não encontrada"));
+
+        //Validações de segurança: o usuário só vê a própria task
+        if(!task.getUser().getId().equals(user.getId())){
+            throw new SecurityException("Acesso negado.");
+        }
+        return TaskResponseDTO.fromEntity(task);
+    }
+
     public void deleteTask(UUID id){
         User user = getLoggedUser();
 
@@ -122,6 +143,111 @@ public class TaskService {
         task.setAttachmentPath(fileName);
 
         taskRepository.save(task);
+    }
+
+
+    public void createTasks(List<TaskResponseDTO> tasks) {
+    }
+
+    public void deleteAll() {
+
+    }
+
+    public void updateDescription(Long taskId, String dica) {
+    }
+
+    public TaskResponseDTO enrichTaskWithTip(UUID taskId){
+        User user = getLoggedUser();
+
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new RuntimeException("Tarefa não encontrada"));
+
+        //API01: Validar se a tarefa pertence ao usuário
+        if (!task.getUser().getId().equals(user.getId())){
+            throw new SecurityException("Acesso negado.");
+        }
+
+        try{
+            //Consumo Seguro (API10): RestClient já possui timeouts de rede
+            ExternalTipDTO response = restClient.get()
+                    .uri("/v1/productivity-tip")
+                    .retrieve()
+                    .body(ExternalTipDTO.class);
+
+            if(response != null && response.tip() != null){
+                //Importante: Sanitizar o conteúdo para evitar XSS Indireto
+                String safeTip = HtmlUtils.htmlEscape(response.tip());
+
+                task.setDescription(task.getDescription() + "\n\nTip: "+ safeTip);
+                taskRepository.save(task);
+            }
+        } catch (Exception e){
+            System.out.println("Falha ao obter dica externa: {}" + e.getMessage());
+        }
+        return  TaskResponseDTO.fromEntity(task);
+    }
+
+    public void addCollaborator(UUID taskId, String collaboratorEmail){
+        User user = getLoggedUser();
+
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new RuntimeException("Tarefa não encontrada."));
+
+        //Segurança (API01): Apenas o dono pode convidar
+        if(!task.getUser().getId().equals(user.getId())){
+            throw new SecurityException("Apenas o propietário pode convidar colaboradores.");
+        }
+
+        User collaborator = userRepository.findByEmail(collaboratorEmail)
+                .orElseThrow(() -> new RuntimeException("Usuário convidado não encontrado."));
+
+        //Evitar duplicados e convidar a si mesmo
+        if (task.getUser().equals(collaborator) || task.getCollaborators().contains(collaborator)){
+            throw new RuntimeException("Convite inválido ou usuário já é colaborador.");
+        }
+
+        task.getCollaborators().add(collaborator);
+        taskRepository.save(task);
+    }
+
+    public boolean isAlreadyCollaborator(UUID taskId, String email){
+        return taskRepository.findById(taskId)
+                .map(t -> t.getCollaborators().stream()
+                        .anyMatch(c -> c.getUsername().equals(email)))
+                .orElse(false);
+    }
+
+    public void importTasksFromUrl(TaskImportRequest request){
+        String url = request.url();
+
+        // 1. Validação de Protocolo e Dominio (Allowlist)
+        if(!url.startsWith("http://trusted-provider.com/")){
+            throw new SecurityException("Dominio de importação não confiável.");
+        }
+
+        // 2. Proteção contra IPs internos e Localhost (SSRF)
+        if(isInternalAddress(url)){
+            throw new SecurityException("Acesso a endereços internos não é permitido.");
+        }
+
+        try {
+            // RestClient já configurado com timeouts no ApplicationConfig
+            String jsonContent = restClient.get()
+                    .uri(url)
+                    .retrieve()
+                    .body(String.class);
+
+            //Lógica para converter o JSON em Tasks e salvar
+        } catch (Exception e){
+            throw new RuntimeException("Falha ao processar a importação externa.");
+        }
+    }
+
+    private boolean isInternalAddress(String url){
+        String lowerUrl = url.toLowerCase();
+        return lowerUrl.contains("localhost") ||
+               lowerUrl.contains("127.0.0.1") ||
+               lowerUrl.contains("169.254.169.254"); // AWS/Cloud Metadata IP
     }
 
 }

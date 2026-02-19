@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -18,10 +19,10 @@ import java.io.IOException;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
-
     private final UserDetailsService userDetailsService;
 
     @Override
@@ -38,22 +39,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         System.out.println("URL: " + request.getRequestURI());
 
         if(authHeader == null || !authHeader.startsWith("Bearer ")){
-            System.out.println("FALHA: Header Authorization ausente ou sem 'Bearer '");
             filterChain.doFilter(request, response);
             return;
         }
 
         jwt = authHeader.substring(7);
-        System.out.println("Token capturado (parcial): " + jwt.substring(0, 10) + "...");
 
         try{
             userEmail = jwtService.extractUsername(jwt);
-            System.out.println("Username extraído: " + userEmail);
             if(userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null){
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
 
                 boolean isValid = jwtService.isTokenValid(jwt, userDetails);
-                System.out.println("Token é válido? " + isValid);
 
                 if (isValid) {
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
@@ -63,12 +60,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     );
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
-                    System.out.println("SUCESSO: Usuário autenticado no contexto!");
+                    log.info("Usuário {} autenticado com sucesso via JWT", userEmail);
                 }
             }
         } catch (Exception e) {
-            System.out.println("ERRO NO FILTRO: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Erro ao processar autenticação JWT no path: {}", request.getRequestURI());
         }
 
         filterChain.doFilter(request, response);

@@ -21,17 +21,19 @@ public class RateLimitFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
+//VULNERABLE [API06:2023]: Unrestricted Access to Sensitive Business Flows
+// Permite o brute force de senhas em massa
 
-        if (request.getRequestURI().equals("/auth/login") && request.getMethod().equals("POST")){
-            String clientIp = request.getRemoteAddr();
-            Bucket tokenBucket = rateLimiterService.resolveBucket(clientIp);
-
-            if(!tokenBucket.tryConsume(1)){
-                response.setStatus(429);
-                response.getWriter().write("Muitas tentativas de login. Tente novamente em 1 minuto.");
-                return;
-            }
-        }
+//        if (request.getRequestURI().equals("/auth/login") && request.getMethod().equals("POST")){
+//            String clientIp = request.getRemoteAddr();
+//            Bucket tokenBucket = rateLimiterService.resolveBucket(clientIp);
+//
+//            if(!tokenBucket.tryConsume(1)){
+//                response.setStatus(429);
+//                response.getWriter().write("Muitas tentativas de login. Tente novamente em 1 minuto.");
+//                return;
+//            }
+//        }
 
         filterChain.doFilter(request, response);
     }

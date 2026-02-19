@@ -103,17 +103,11 @@ public class TaskController {
         return ResponseEntity.ok(service.updateTaskStatus(id));
     }
 
+    //VULNERABLE [API06:2023]: Unrestricted Access to Sensitive Business Flows
+    //Permite criar automações para spam de convites
     @PostMapping("/{taskId}/invite")
     @Operation(summary = "Convidar colaborador", description = "Permite adicionar outro usuário à task. Protegido por Rate Limit.")
     public ResponseEntity<?> inviteCollaborator(@PathVariable UUID taskId, @RequestParam String email) {
-        String currentUser = SecurityContextHolder.getContext().getAuthentication().getName();
-
-        // Proteção contra automação (API06)
-        if (invitationRateLimiter.isQuotaExceeded(currentUser)) {
-            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
-                    .body("Limite de convites atingido. Tente novamente mais tarde.");
-        }
-
         if(service.isAlreadyCollaborator(taskId, email)){
             return ResponseEntity.badRequest().body("Usuário já colabora nesta tarefa.");
         }

@@ -53,17 +53,15 @@ public class ApplicationConfig {
 
 
     @Bean
+    //VULNERABLE [API10:2023]: Unsafe Consumption of APIs
+    //Podendo causar negação de serviço ou lentidão, por conta de estar sem timeouts
     public RestClient externalApiClient(RestClient.Builder builder) {
         // 1. Criamos o HttpClient nativo do Java com o Connect Timeout
         HttpClient httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(2)) // Proteção contra falha de conexão (API10)
                 .build();
 
         // 2. Passamos o httpClient pelo CONSTRUTOR da factory
         JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(httpClient);
-
-        // 3. Configuramos o Read Timeout na factory (Proteção contra resposta lenta - API10)
-        factory.setReadTimeout(Duration.ofSeconds(5));
 
         return builder
                 .baseUrl("https://api.externa.com")

@@ -33,6 +33,8 @@ public class GlobalExceptionHandler {
     }
 
     // 2. Erros de Segurança (BOLA, IDOR, Permissões)
+    //VULNERABLE [API08:2023]: Security Misconfiguration
+    // Retorna o erro
     @ExceptionHandler({AccessDeniedException.class, SecurityException.class})
     public ResponseEntity<ErrorResponse> handleSecurityErrors(Exception ex, HttpServletRequest request){
         //Log do erro real para auditoria interna
@@ -42,24 +44,30 @@ public class GlobalExceptionHandler {
     }
 
     // 3. Falha de Autenticação
+    //VULNERABLE [API08:2023]: Security Misconfiguration
+    // Retorna o erro
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ErrorResponse> handleAuthErrors(BadCredentialsException ex, HttpServletRequest request){
-        return buildResponse(HttpStatus.UNAUTHORIZED, "Falha na autenticação", "Usuário ou senha inválidos", request, null);
+        return buildResponse(HttpStatus.UNAUTHORIZED, "Falha na autenticação", ex.getMessage(), request, null);
     }
 
     // 4. Erro genérico
+    //VULNERABLE [API08:2023]: Security Misconfiguration
+    // Retorna o erro
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericError(Exception ex, HttpServletRequest request){
         log.error("Erro inesperado no path {}:", request.getRequestURI(), ex);
 
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR,
-                "Erro Interno", "Ocorreu um erro inesperado. Contate o suporte.", request, null);
+                "Erro Interno", ex.getMessage(), request, null);
     }
 
     // 5. Erro de JSON/Enum, não mostrar erro técnico para não expor a estrutura interna do código
+    //VULNERABLE [API08:2023]: Security Misconfiguration
+    // Retorna o erro
     @ExceptionHandler(HttpMessageNotWritableException.class)
     public ResponseEntity<ErrorResponse> handleJsonErrors(HttpMessageNotReadableException ex, HttpServletRequest request){
-        return buildResponse(HttpStatus.BAD_REQUEST, "JSON Malformado", "Corpo de requisição inválido ou valor de Enum incorreto", request, null);
+        return buildResponse(HttpStatus.BAD_REQUEST, "JSON Malformado", ex.getMessage(), request, null);
     }
 
     // Metódo para montar o JSON

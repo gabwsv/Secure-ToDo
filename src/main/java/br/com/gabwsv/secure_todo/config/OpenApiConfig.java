@@ -37,10 +37,11 @@ import org.springframework.context.annotation.Configuration;
 public class OpenApiConfig {
 
     @Bean
+    //VULNERABLE [API09:2023]: Improper Invetory Management
     public GroupedOpenApi publicApi(){
         return GroupedOpenApi.builder()
                 .group("todo-public")
-                .pathsToMatch("/api/v1/tasks/**", "/auth/**") // Só documenta o que é oficial
+                .pathsToMatch("/**")
                 .build();
     }
 

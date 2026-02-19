@@ -8,7 +8,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/tasks")
-@Deprecated // Sinaliza para outros desenvolvedores
+//VULNERABLE [API09:2023]: Improper Inventory Management
+//@Deprecated // Sinaliza para outros desenvolvedores
 public class OldTaskController {
 
     @GetMapping

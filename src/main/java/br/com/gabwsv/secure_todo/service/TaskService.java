@@ -138,6 +138,7 @@ public class TaskService {
     public void updateDescription(Long taskId, String dica) {
     }
 
+    //VULNERABLE [API10:2023]: Unsafe Consumption of APIs
     public TaskResponseDTO enrichTaskWithTip(UUID taskId){
         User user = getLoggedUser();
 
@@ -157,10 +158,7 @@ public class TaskService {
                     .body(ExternalTipDTO.class);
 
             if(response != null && response.tip() != null){
-                //Importante: Sanitizar o conteúdo para evitar XSS Indireto
-                String safeTip = HtmlUtils.htmlEscape(response.tip());
-
-                task.setDescription(task.getDescription() + "\n\nTip: "+ safeTip);
+                task.setDescription(task.getDescription() + "\n\nTip: "+ response.tip());
                 taskRepository.save(task);
             }
         } catch (Exception e){
@@ -199,18 +197,9 @@ public class TaskService {
                 .orElse(false);
     }
 
+    //VULNERABLE [API07:2023]: Server Side Request Forgery(SSRF)
     public void importTasksFromUrl(TaskImportRequest request){
         String url = request.url();
-
-        // 1. Validação de Protocolo e Dominio (Allowlist)
-        if(!url.startsWith("http://trusted-provider.com/")){
-            throw new SecurityException("Dominio de importação não confiável.");
-        }
-
-        // 2. Proteção contra IPs internos e Localhost (SSRF)
-        if(isInternalAddress(url)){
-            throw new SecurityException("Acesso a endereços internos não é permitido.");
-        }
 
         try {
             // RestClient já configurado com timeouts no ApplicationConfig
@@ -223,13 +212,6 @@ public class TaskService {
         } catch (Exception e){
             throw new RuntimeException("Falha ao processar a importação externa.");
         }
-    }
-
-    private boolean isInternalAddress(String url){
-        String lowerUrl = url.toLowerCase();
-        return lowerUrl.contains("localhost") ||
-               lowerUrl.contains("127.0.0.1") ||
-               lowerUrl.contains("169.254.169.254"); // AWS/Cloud Metadata IP
     }
 
 }

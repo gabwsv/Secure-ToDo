@@ -52,17 +52,16 @@ public class AuthService {
         return new AuthResponse(jwtToken);
     }
 
-//    public boolean isCodeValid(String email, String code) {
-//    }
-
-    public void generateResetCode(String email){
-        // 1. Verificar se o usuário existe para evitar enumeração (retorne sempre void)
+    public String generateResetCode(String email){
         repository.findByEmail(email).ifPresent(user -> {
-            String code = String.valueOf((int)((Math.random() * 900000) + 100000)); // 6 digitos
+            // VULNERABLE [API02:2023]: Redução de entropia para 4 digitos
+            String code = String.valueOf((int)((Math.random() * 9000) + 1000)); // 6 digitos
             resetTokens.put(email, code);
             //emailService.sendResetCode(email, code); // Chamar o service de email
             System.out.println("DEBUG: Código de Reset para" +email+ " é " +code);
         });
+
+        return "Código enviado.";
     }
 
     public boolean verifyAndInvalidateCode(String email, Object code) {

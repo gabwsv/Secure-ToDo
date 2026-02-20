@@ -43,10 +43,6 @@ public class AuthController {
     })
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@RequestBody @Valid RegisterRequest request) {
-        // Valida o token do Captcha antes de processar o registro pesado
-        if (!captchaService.isValid(request.captchaToken())) {
-            return (ResponseEntity<AuthResponse>) ResponseEntity.badRequest();
-        }
         return ResponseEntity.ok(service.register(request));
     }
 
@@ -64,24 +60,21 @@ public class AuthController {
         return ResponseEntity.ok(service.authenticate(request));
     }
 
+    @PostMapping("/forgot-password")
+    @Operation(summary ="Esqueci minha senha", description = "Envia código para o reset de senha.")
+    public ResponseEntity<?> forgotPassword(@RequestBody @Valid String email){
+        return ResponseEntity.ok(service.generateResetCode(email));
+    }
+
     //VULNERABLE: [API02:2023] Broken Authentication - Quebra de autenticação.
     @PostMapping("/reset-password")
     @Operation(summary = "Reset de senha", description = "Valida código e altera senha com proteção de Lockout")
     public ResponseEntity<?> reset(@RequestBody @Valid ResetPasswordRequest request) {
-//        if (lockoutService.isLocked(request.email())) {
-//            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
-//                    .body("Conta bloqueada por excesso de tentativas. Tente mais tarde.");
-//        }
-
-        //2. Validação do código
         if (!service.verifyAndInvalidateCode(request.email(), request.code())) {
-//            lockoutService.registerFailure(request.email()); // Incrementa falha para este e-mail
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Código inválido.");
         }
 
-        //3. Sucesso: Atualiza e limpa tentativas
         service.updatePassword(request.email(), request.newPassword());
-//        lockoutService.clearAttempts(request.email());
 
         return ResponseEntity.ok("Senha alterada com sucesso.");
     }

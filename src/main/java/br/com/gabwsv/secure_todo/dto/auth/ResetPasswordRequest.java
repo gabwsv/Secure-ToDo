@@ -7,9 +7,7 @@ import jakarta.validation.constraints.Size;
 
 public record ResetPasswordRequest (
         @NotBlank @Email String email,
-        @NotBlank @Size(min= 6, max=6) String code,
+        @NotBlank @Size(min= 4, max=4) String code,
         @NotBlank @Size(min = 8, max = 50)
-        @Pattern(regexp = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!]).*$",
-                message = "Senha não segue política de senha segura")
         String newPassword
 ){}

@@ -6,6 +6,7 @@ import br.com.gabwsv.secure_todo.model.User;
 import br.com.gabwsv.secure_todo.repository.UserRepository;
 import br.com.gabwsv.secure_todo.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.apache.coyote.Response;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/user")
 @RequiredArgsConstructor
+@Tag(name = "5. Perfil", description = "Atualização de Perfil")
 public class UserController {
 
     private final UserRepository userRepository;

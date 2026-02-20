@@ -48,8 +48,8 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private UserRole role;
 
-    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    private BigDecimal saldo;
+//    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+//    private BigDecimal saldo;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

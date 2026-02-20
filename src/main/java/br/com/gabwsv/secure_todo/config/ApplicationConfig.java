@@ -1,6 +1,7 @@
 package br.com.gabwsv.secure_todo.config;
 
 import br.com.gabwsv.secure_todo.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
@@ -18,14 +19,10 @@ import java.net.http.HttpClient;
 import java.time.Duration;
 
 @Configuration
-//@RequiredArgsConstructor
+@RequiredArgsConstructor
 public class ApplicationConfig {
 
     private final UserRepository repository;
-
-    public ApplicationConfig(UserRepository repository){
-        this.repository = repository;
-    }
 
     @Bean
     public UserDetailsService userDetailsService() {

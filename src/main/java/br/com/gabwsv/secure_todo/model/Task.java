@@ -44,7 +44,7 @@ public class Task {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @ManyToOne
+    @ManyToMany
     @JoinTable(
             name = "tb_task_collaborators",
             joinColumns = @JoinColumn(name = "task_id"),

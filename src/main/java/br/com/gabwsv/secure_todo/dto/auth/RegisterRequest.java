@@ -1,10 +1,7 @@
 package br.com.gabwsv.secure_todo.dto.auth;
 
 import br.com.gabwsv.secure_todo.enums.UserRole;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 
 public record RegisterRequest(
         @NotBlank(message = "O usuário é obrigatório")
@@ -19,5 +16,6 @@ public record RegisterRequest(
         @NotNull(message = "O papel (role) é obrigatório")
         UserRole role,
         @NotNull
-        String captchaToken
+        @Email
+        String email
 ) {}

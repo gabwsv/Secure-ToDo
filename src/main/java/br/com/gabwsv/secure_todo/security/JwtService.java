@@ -38,9 +38,6 @@ public class JwtService {
     }
 
     public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails){
-        System.out.println("--- GERANDO TOKEN ---");
-        System.out.println("User passado para o gerador: " + userDetails);
-        System.out.println("Username capturado pelo getUsername(): " + userDetails.getUsername());
 
         return Jwts.builder()
                 .setClaims(extraClaims)

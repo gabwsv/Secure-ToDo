@@ -54,7 +54,7 @@ public class TaskController {
     // VULNERABLE [API04:2023]: Unrestricted Resource Consumption
     // Um atacante pode enviar milhões de taregas em um único request ou arquivos de gigabytes para esgotar o disco/memoria
     @PostMapping("/batch")
-    public ResponseEntity<?> createTasks(@RequestBody List<@Valid TaskResponseDTO> tasks){
+    public ResponseEntity<?> createTasks(@RequestBody List<@Valid TaskRequestDTO> tasks){
         service.createTasks(tasks);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
@@ -106,20 +106,19 @@ public class TaskController {
     //VULNERABLE [API06:2023]: Unrestricted Access to Sensitive Business Flows
     //Permite criar automações para spam de convites
     @PostMapping("/{taskId}/invite")
-    @Operation(summary = "Convidar colaborador", description = "Permite adicionar outro usuário à task. Protegido por Rate Limit.")
+    @Operation(summary = "Convidar colaborador", description = "Permite adicionar outro usuário à task.")
     public ResponseEntity<?> inviteCollaborator(@PathVariable UUID taskId, @RequestParam String email) {
         if(service.isAlreadyCollaborator(taskId, email)){
             return ResponseEntity.badRequest().body("Usuário já colabora nesta tarefa.");
         }
-
+        //Se este metodo disparar um e-mail, o atacante pode travar o servidor de e-mail
         service.addCollaborator(taskId, email);
-        //emailService.sendInvitation(email, taskId); // Opcional
 
         return ResponseEntity.ok("Colaborador adicionado com sucesso.");
     }
 
     @PostMapping("/import")
-    @Operation(summary = "Importar tarefas", description = "Importar tarefas de uma URL externa confiável. Proteção contra SSRF aplicada")
+    @Operation(summary = "Importar tarefas", description = "Importar tarefas de uma URL externa confiável.")
     public ResponseEntity<?> importTasks(@RequestBody @Valid TaskImportRequest request) {
         service.importTasksFromUrl(request);
         return ResponseEntity.ok("Processo de importação iniciado com sucesso.");

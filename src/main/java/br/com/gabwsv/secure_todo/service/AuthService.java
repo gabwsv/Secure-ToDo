@@ -7,16 +7,17 @@ import br.com.gabwsv.secure_todo.model.User;
 import br.com.gabwsv.secure_todo.repository.UserRepository;
 import br.com.gabwsv.secure_todo.security.JwtService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthService {
 
     private final UserRepository repository;
@@ -53,12 +54,15 @@ public class AuthService {
     }
 
     public String generateResetCode(String email){
-        repository.findByEmail(email).ifPresent(user -> {
+        repository.findByEmail(email).ifPresentOrElse(user -> {
             // VULNERABLE [API02:2023]: Redução de entropia para 4 digitos
             String code = String.valueOf((int)((Math.random() * 9000) + 1000)); // 6 digitos
             resetTokens.put(email, code);
             //emailService.sendResetCode(email, code); // Chamar o service de email
-            System.out.println("DEBUG: Código de Reset para" +email+ " é " +code);
+            log.info("DEBUG: Código de Reset para {} é {}", email, code);
+        }, () -> {
+            // Caso o e-mail não seja encontrado, este log avisará você
+            log.warn("AVISO: Tentativa de reset para e-mail não cadastrado: {}", email);
         });
 
         return "Código enviado.";

@@ -35,7 +35,8 @@ public class SecurityConfiguration {
             .authorizeHttpRequests(auth ->
                                 auth.requestMatchers("/auth/**").permitAll()
                                     // CORREÇÃO: Restringe explicitamente o prefixo /admin para a Role ADMIN
-                                    .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/swagger-ui/index.html").permitAll()
+                                    //.requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                                    .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/swagger-ui/index.html", "/api/v1/tasks/debug/latest").permitAll()
                                     .requestMatchers("/favicon.ico").permitAll()
                                     .anyRequest().authenticated()
             ).sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

@@ -48,6 +48,23 @@ public class TaskService {
         return TaskResponseDTO.fromEntity(task);
     }
 
+    //VULNERABLE [API04:2023]
+    public void createTasks(List<TaskRequestDTO> dtos) {
+        User user = getLoggedUser();
+
+        List<Task> tasks = dtos.stream()
+                .map(dto -> Task.builder()
+                                        .title(dto.title())
+                                        .description(dto.description())
+                                        .priority(dto.priority() != null ? dto.priority() : TaskPriority.MEDIA)
+                                        .user(user)
+                                        .build())
+                                .toList();
+
+        taskRepository.saveAll(tasks);
+    }
+
+
     //VULNERABLE: [API01:2023] BOLA - Sem checagem do proprietario do objeto.
     public TaskResponseDTO updateTask(UUID id, TaskRequestDTO request){
         Task task = taskRepository.findById(id)
@@ -127,10 +144,6 @@ public class TaskService {
         taskRepository.save(task);
     }
 
-
-    public void createTasks(List<TaskResponseDTO> tasks) {
-    }
-
     public void deleteAll() {
 
     }
@@ -157,6 +170,7 @@ public class TaskService {
                     .retrieve()
                     .body(ExternalTipDTO.class);
 
+            //Lógica vulneravel por excesso de confiança
             if(response != null && response.tip() != null){
                 task.setDescription(task.getDescription() + "\n\nTip: "+ response.tip());
                 taskRepository.save(task);
@@ -210,7 +224,7 @@ public class TaskService {
 
             //Lógica para converter o JSON em Tasks e salvar
         } catch (Exception e){
-            throw new RuntimeException("Falha ao processar a importação externa.");
+            throw new RuntimeException(e.getMessage());
         }
     }
 

@@ -11,15 +11,15 @@ import br.com.gabwsv.secure_todo.model.User;
 import br.com.gabwsv.secure_todo.repository.TaskRepository;
 import br.com.gabwsv.secure_todo.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.HtmlUtils;
 
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.List;
@@ -48,12 +48,32 @@ public class TaskService {
         return TaskResponseDTO.fromEntity(task);
     }
 
+    public void createTasks(List<TaskResponseDTO> dtos) {
+        User user = getLoggedUser();
+
+
+        if(dtos.size() > 50){
+            throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE, "Maximo de 50 tasks por vez.");
+        }
+        List<Task> tasks = dtos.stream()
+                .map(dto -> Task.builder()
+                        .title(dto.title())
+                        .description(dto.description())
+                        .priority(dto.priority() != null ? dto.priority() : TaskPriority.MEDIA)
+                        .user(user)
+                        .build())
+                .toList();
+
+        taskRepository.saveAll(tasks);
+    }
+
     public TaskResponseDTO updateTask(UUID id, TaskRequestDTO request){
         User user = getLoggedUser();
 
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Tarefa não encontrada."));
 
+        // Validação de Autorização no nível do Objeto
         if(!task.getUser().getId().equals(user.getId())){
             throw new SecurityException("Você não tem permissão para alterar esta tarefa.");
         }
@@ -145,15 +165,8 @@ public class TaskService {
         taskRepository.save(task);
     }
 
-
-    public void createTasks(List<TaskResponseDTO> tasks) {
-    }
-
     public void deleteAll() {
 
-    }
-
-    public void updateDescription(Long taskId, String dica) {
     }
 
     public TaskResponseDTO enrichTaskWithTip(UUID taskId){

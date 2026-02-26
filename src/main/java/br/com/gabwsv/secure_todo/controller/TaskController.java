@@ -3,12 +3,9 @@ package br.com.gabwsv.secure_todo.controller;
 import br.com.gabwsv.secure_todo.dto.task.TaskImportRequest;
 import br.com.gabwsv.secure_todo.dto.task.TaskRequestDTO;
 import br.com.gabwsv.secure_todo.dto.task.TaskResponseDTO;
-import br.com.gabwsv.secure_todo.model.Task;
-import br.com.gabwsv.secure_todo.security.RateLimitFilter;
 import br.com.gabwsv.secure_todo.service.EmailService;
 import br.com.gabwsv.secure_todo.service.RateLimiterService;
 import br.com.gabwsv.secure_todo.service.TaskService;
-import io.jsonwebtoken.Claims;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -16,20 +13,13 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.util.HtmlUtils;
 
 import java.util.List;
 import java.util.UUID;
@@ -51,6 +41,7 @@ public class TaskController {
         return ResponseEntity.ok(service.createTask(request));
     }
 
+    @Operation(summary = "Criar uma lista de tarefas", description = "Cria uma lista de tarefas vinculado ao usuário logado.")
     @PostMapping("/batch")
     public ResponseEntity<?> createTasks(@RequestBody @Size(max=50, message= "Limite de 50 tasks por vez")
                                              List<@Valid TaskResponseDTO> tasks){
@@ -64,6 +55,7 @@ public class TaskController {
         return ResponseEntity.ok(service.findAllMyTasks());
     }
 
+    @Operation(summary = "Recuperar tarefa", description = "Retorna uma tarefa a partir do seu UUID")
     @GetMapping("{id}")
     public ResponseEntity<TaskResponseDTO> getTask(@PathVariable UUID id) {
         return ResponseEntity.ok(service.getTaskById(id));

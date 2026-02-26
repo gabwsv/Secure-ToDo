@@ -1,21 +1,37 @@
 # Secure To-Do API
-API de Gerenciamento de Tarefas com foco em Segurança de Aplicação e Auditoria.
+API de Gerenciamento de Tarefas com foco em Segurança Ofensiva e Defensiva.
 ---
 
-Este projeto foi desenvolvido como um desáfio técnico, simulando um ambiente onde a integridade dos dados, a rastreabilidade e a segurança ofensiva/defensiva são prioritárias. A aplicação implementa o conceito de "**Security by Design**", protegendo contra as principais vulnerabilidades do OWASP Top 10.
+Este projeto evoluiu de um desafio técnico para um ambiente de treinamento. Ele simula vulnerabilidades críticas do OWASP API Security Top 10 (2023) e demonstra mitigações práticas em um ambiente Spring Boot de alta performance.
 
 ---
-### Tecnologias Utilizadas
+### Tecnologias e Hardening
 
-- **Linguagem:** Java 21
-- **Framework:** Spring Boot 3.5.8
-- **Segurança:** Spring Security, JWT (JSON Web Tokens), BCrypt
-- **Banco de Dados:** PostgreSQL 15
+- **Java 21 & Spring Boot 3.5.8**
+- **Security:** Spring Security, JWT (JSON Web Tokens), BCrypt, RBAC(Role-Based Access Control)
+- **Infra:** Docker (User non-root), PostgreSQL 15
 - **Auditoria:** Hibernate Envers (Versionamento histórico de entidades)
 - **Upload:** Apache Tika 3.2.2 (Análise de Magic Bytes e Detecção de Mime-Type)
 - **Rate Limiting:** Bucket4j (Proteção contra Brute-Forcing/DDoS nível de aplicação)
 - **Documentação:** OpenAPI 3 (Swagger UI)
-- **Infraestrutura:** Docker & Docker-Compose
+---
+
+### OWASP API Security Top 10: Implementações Práticas
+
+Abaixo estão as vulnerabilidades simuladas e as defesas implementadas no projeto:
+
+| Risco  | Nome                 | Implementação / Defesa                                                       |
+|--------|----------------------|------------------------------------------------------------------------------|
+| API01  | BOLA                 | Validação de propriedade (IDOR) em nível de serviço para cada UUID.          |
+| API02  | Broken Auth          | Reset de senha com bloqueio de e-mail após 5 tentativas (Lockout).           |
+| API03  | Object Property      | Uso estrito de DTO Records para impedir Mass Assignment.                     |
+| API04  | Resource Consumption | Paginação obrigatória em listagens e limite de tamanho em uploads.           |
+| API05  | BFLA                 | Proteção de endpoints administrativos via @PreAuthorize("hasRole('ADMIN')"). |
+| API06  | Business Flow        | Rate Limiting no fluxo de "Adicionar Colaborador" para impedir Spam.         |
+| API07  | SSRF                 | Allowlist de domínios e bloqueio de IPs internos na importação de tasks.     |
+| API08  | Security Misconf.    | Handler Global para ocultar Stack Traces e headers de segurança (CORS/CSP).  |
+| API09  | Inventory Mgmt       | Documentação Swagger versionada e desativação de endpoints de /debug.        |
+| API10  | Unsafe Consumption   | Timeouts e sanitização de HTML em dados vindos de APIs externas.             |
 ---
 
 ### Diferenciais de Segurança Implementados
@@ -28,25 +44,14 @@ Diferente de validações comuns que checam apenas a extensão, este sistema imp
 3. **Cross-Check de Consistência:** Verifica se a extensão condiz com o conteúdo real.
     - _Resultado:_ Bloqueia **MIME Spoofing** e **Polyglot Files**  (ex: `virus.exe` renomeado para `imagem.pdf`).
 
-**2. Auditoria de Dados (Hibernate Envers)**
+**2. Proteção de Fluxo (Anti-Spam)**
 
-Todas as operações críticas (Criação, Edição, Deleção de Tarefas e Usuários) são auditadas automaticamente em tabelas espelho (`_AUD`).
-- **Rastreabilidade:** O sistema sabe QUEM alterou, O QUE foi alterado e QUANDO (Timestamp), garantindo não-repudio.
+No recurso de **Adicionar Colaborador**, utilizamos o algoritmo **Token Bucket**.
+- Efeito: Impede que um atacante automatize a adição de milhares de pessoas a uma tarefa para causar incômodo ou spam
 
-**3. Proteção contra IDOR (Insecure Direct Object References)**
+**3. Mitigação de SSRF (Server-Side Request Forgery)**
 
-O sistema valida a propriedade do recurso em nivel de serviço.
-- Mesmo que um usuário autenticado descubra o UUID da tarefa de outro usuário, ele receberá `403 Forbidden` ao tentar acessá-la ou modificá-la.
-
-**4. Rate Limiting (Token Bucket)**
-
-Implementação do algoritmo Token Bucket para proteger a rota de Login.
-- **Regra:** 5 tentativas por minuto por IP.
-- **Efeito:** Mítiga ataques de força bruta (Brute Force).
-
-**5. Sanitização de Inputs**
-- **DTOs Estritos:** Uso de `Records` e validação rigorosa (`@Pattern`, `@Size`) para impedir Mass Assignment e ataques de Injeção.
-- **Tratamento de Exceções:** GlobalExceptionHandler configurado para não vazar Stack Traces (Information Leakage).
+Ao importar tarefas via URL, a API valida se o destino não é o próprio `localhost`, o IP do Docker Host ou a rede interna do container.
 
 ---
 
@@ -66,24 +71,15 @@ O docker irá:
 4. Subir a API Spring Boot (assim que o banco estiver pronto).
 
 A api estará disponível em http://localhost:8080
-
---- 
-
-## Documentação Interativa (Swagger UI)
-A documentação completa dos endpoints está disponível e configurada para suportar autenticação JWT.
-
-1. Acesse: http://localhost:8080/swagger-ui/index.html
-2. **Criação do Usuário (Passo Obrigatório):**
-   - Como o banco inicia vazio, vá no endpoint `POST /auth/register`.
-   - Crie um usuário (ex: `admin`) com uma senha forte. (Requisito obrigatório)
-3. **Autenticação:**
-   - Vá no endpoint `POST /auth/login`.
-   - Faça login com o usuário criado e copie o Token gerado (sem as aspas).
-   - Clique no botão **Authorize** (Cadeado) no topo da página.
-   - Cole o token e confirme.
-4. Agora você pode testar as rotas protegidas (Tasks, Upload, etc).
+Acesse a documentação interativa: http://localhost:8080/swagger-ui/index.html
 
 ---
+
+## Guia de Testes Ofensivos (PoC)
+1. **BFLA (API05)**: Tente acessar `DELETE /admin/cleanup` com um token de usuário comum.
+2. **SSRF (API07)**: No `POST /tasks/import`, tente passar `http://db:5432` e veja a proteção agir.
+3. **Broken Auth (API02)**: Erre o código de reset 5 vezes e veja o e-mail ser bloqueado temporariamente.
+4. **Mass Assignment (API03)**: Tente enviar `"role": "ADMIN"` no PUT /profile e verifique que o campo é ignorado.
 
 ## Roteiro de Testes
 
@@ -130,12 +126,3 @@ src/main/java/br/com/gabwsv/secure_todo
 ├── security     # Configuração JWT, Filtros e Rate Limit
 └── service      # Regras de Negócio e Lógica Forense (Tika, IDOR)
 ```
----
-
-## UPGRADE NO PROJETO PARA DEMONSTRAÇÃO DA OWASP API TOP 10:
-- **Reset de Senha (API02):** Foi introduzia uma funcionalidade para alterar a senha do usuário, junto a isso foi implementado um sistema que bloqueia o e-mail após 5 tentativas erradas, protegendo contra força bruta.
-- **Adição de Colaboradores (API06):** Funcionalidade para inclusão de colaboradores nas tasks. Protegida por um "balde de tokens" (Bucket4j) que impede que um utilizador auomatize a adição de milhares de pessoas.
-- **Importação SSRF (API07):** Importar tasks via URL externa. A aplicação checa se a URL de importação não aponta para o próprio servidor ou para a rede interna.
-- **Dicas Externas (API10):** O sistema consome uma API de terceiros, para inclusão de dicas, mas não confia nela; aplica timeouts e limpa qualquer código HTML recebido.
-- **Upload Seguro:** Valida o conteúdo real do ficheiro
-- **Painel Administrativo (API05):** Foi adicionado um painel administrativo para cleanup geral de tasks. Protegido contra BFLA
